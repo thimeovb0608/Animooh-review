@@ -368,6 +368,9 @@
     </div>
 
     <form id="feedbackForm" onsubmit="submitFeedback(event)">
+      <!-- Formspree hidden fields -->
+      <input type="hidden" name="_subject" value="Animooh – Negatieve feedback ontvangen" />
+      <input type="hidden" name="score" id="hiddenRating" value="" />
       <div class="field">
         <label>Naam</label>
         <input type="text" name="name" placeholder="Jouw naam" required />
@@ -490,7 +493,14 @@
   /* ── Feedback form ── */
   function submitFeedback(e) {
     e.preventDefault();
-    const fd = new FormData(e.target);
+
+    // Fill in the hidden star rating field before sending
+    document.getElementById('hiddenRating').value = chosen + ' ster(ren)';
+
+    const form = e.target;
+    const fd   = new FormData(form);
+
+    // Save to localStorage for dashboard
     const s = loadStats();
     s.feedbackEntries.push({
       name:      fd.get('name'),
@@ -501,9 +511,16 @@
     });
     saveStats(s);
 
-    // Tweak the reward copy for negative flow
+    // POST to Formspree — fire and forget, UX never blocks
+    fetch('https://formspree.io/f/xeewlvbr', {
+      method:  'POST',
+      body:    fd,
+      headers: { 'Accept': 'application/json' }
+    }).catch(() => {}); // silent fail — still shows thank-you
+
+    // Transition immediately, don't wait for network
     document.getElementById('rewardTitle').textContent = 'Bedankt voor je eerlijkheid!';
-    document.getElementById('rewardText').innerHTML = 'We nemen contact met je op. Als extra bedankje krijg je ook <strong>30% korting</strong> op je volgende bestelling.';
+    document.getElementById('rewardText').innerHTML = 'We nemen zo snel mogelijk contact met je op. Als extra bedankje krijg je ook <strong>30% korting</strong> op je volgende bestelling.';
     show('step2neg', false);
     show('step3reward', true);
   }
